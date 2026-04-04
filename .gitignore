@@ -1,0 +1,11 @@
+*.stl
+*.vtk
+*.ply
+*.nii
+*.zip
+data/
+datasets/
+fitting-results/
+testsetfitting/
+target/
+.DS_Store

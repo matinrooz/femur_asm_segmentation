@@ -9,3 +9,6 @@ fitting-results/
 testsetfitting/
 target/
 .DS_Store
+.idea/
+.bsp/
+project/target/

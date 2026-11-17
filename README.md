@@ -1,140 +1,80 @@
-# 🦴 Femur Segmentation using Active Shape Modeling (ASM)
+# femur_asm_segmentation
 
-## 📌 Overview
+Group project with Hari Narayanan. We segmented femurs in CT images by fitting a statistical
+shape model with an active shape model (ASM) intensity term, using Markov chain Monte Carlo
+(Metropolis-Hastings) in Scala with [Scalismo](https://scalismo.org).
 
-This project focuses on **3D femur segmentation from CT images** using **Active Shape Modeling (ASM)** and probabilistic shape fitting techniques.
+The report is in `Fitting/PSM_Final.pdf`.
 
-The goal is to accurately fit a statistical shape model to femur structures using landmark-based alignment and iterative optimization via **Markov Chain Monte Carlo (MCMC)** methods.
+## Setup
 
-The pipeline performs segmentation on both:
+- Input: a CT image, landmarks on the femur, and contour points.
+- 5 validation images (4, 14, 23, 25, 30) with given landmarks and ground-truth
+  segmentations.
+- 5 test images (1, 9, 10, 13, 37) without labels. We placed the landmarks for these
+  ourselves.
+- Sample = pose (rotation, translation) + shape model coefficients.
 
-* Given dataset (with provided landmarks)
-* Test dataset (with manually created landmarks)
+## Fitting
 
----
+We first used one chain with the given landmarks, but the results were not plausible femurs.
+So we run three chains one after the other, each starting from the best sample of the
+previous one (`src/main/scala/fitting/Main.scala`):
 
-## 🧠 Methodology
+| chain | proposals | posterior | samples |
+|---|---|---|---|
+| 1 | rotation + translation | closest point × prior × landmark likelihood | 7,000 (after 1,000 burn-in) |
+| 2 | shape + rotation + translation | same as chain 1 | 10,000 |
+| 3 | shape + rotation + translation at several step sizes | prior × landmark likelihood × ASM image intensity | 11,000 |
 
-### 1. Statistical Shape Modeling
+The step sizes were tuned per image, they are listed in Tables I to III of the report.
 
-* A pre-defined **Active Shape Model (ASM)** is used
-* Landmarks define the femur geometry
-* Shape variations are modeled probabilistically
+## Results
 
-### 2. Fitting Pipeline
+Validation set, fitted mesh vs. ground-truth segmentation (`src/main/scala/validation/Validate.scala`,
+distances in mm):
 
-* Input: CT image + landmark points
-* Output: Fitted femur shape
-* Optimization is done by maximizing posterior probability:
+| image | avg. distance | Hausdorff distance |
+|---|---|---|
+| 4 | 1.17 | 11.93 |
+| 14 | 1.30 | 6.35 |
+| 23 | 0.46 | 0.46 |
+| 25 | 1.18 | 4.00 |
+| 30 | 0.81 | 3.82 |
 
-$$
-Posterior = Likelihood × Prior × ClosestPoint
-$$
+Average distance is around 1 mm for all images. The Hausdorff distance varies a lot: for
+image 4 some part of the mesh is almost 12 mm away from the segmentation.
 
-Evaluators used:
+For the test set there is no ground truth, so we only checked the fits visually (figures in
+the report).
 
-* `ClosestPointEvaluator`
-* `PriorEvaluator`
-* `LikelihoodEvaluator`
+Trace plot and pairs plot of the last run:
 
----
+![trace plot](plots/traceplot.png)
+![pairs plot](plots/pairs.png)
 
-### 3. Markov Chain Optimization (MCMC)
+## What we learned
 
-To improve fitting quality, multiple Markov Chains are applied:
+- The three chains improved the fit compared to one chain, but this mostly means the
+  proposals of the first chain were not good. One chain with good proposals should be
+  enough.
+- Adding the ASM evaluator to the posterior of chains 1 and 2 deformed the femur, so we
+  only use the intensity term in chain 3.
+- Bad landmarks give bad fits. When the landmarks are uncertain, the landmark noise has to
+  be larger.
 
-* **Chain 1** → Translation + Rotation
-* **Chain 2** → + Shape updates
-* **Chain 3** → Multi-scale proposals
+## Open points
 
-Each chain runs with **10,000+ iterations** to improve convergence and acceptance rate 
+- The step sizes were tuned by hand for each image.
+- `Main.scala` has the image number hard coded (it is currently set to test image 9), so
+  it has to be changed for each run.
 
----
+## Run
 
-## 📊 Results
-
-### Validation Metrics
-
-* Average Distance
-* Hausdorff Distance
-
-Results show strong alignment between predicted and ground-truth shapes.
-
-### Key Observations
-
-* Multiple Markov Chains significantly improve segmentation quality
-* Poor proposal design leads to unrealistic shapes
-* Landmark quality is critical for performance
-* Trace plots confirm convergence behavior across chains 
-
----
-
-## 🧪 Test Set Generalization
-
-* New landmarks were manually created for unseen images
-* Same pipeline applied
-* Model successfully generalized to test data
-
----
-
-## 📁 Project Structure
-
-```
-.
-├── data/                # CT images and datasets
-├── datasets/            # Training / validation / test splits
-├── fitting_project/     # Core fitting pipeline
-├── fitting-results/     # Output results and segmentation
-├── plots/               # Visualizations (trace plots, results)
-├── src/                 # Source code
-├── storedParameters.json
-├── build.sbt            # Scala build file
-```
-
----
-
-## ⚙️ Technologies
-
-* Scala (Scalismo framework)
-* Statistical Shape Modeling (ASM)
-* MCMC / Markov Chains
-* 3D Medical Image Processing
-
----
-
-## 🚀 How to Run
+Needs sbt and the course data in `datasets/` (not in this repo): `asm/`, `validationset/`
+with `landmarks/`, `segmentations/` and `fitting-results/`, and `testset/`.
 
 ```bash
-sbt run
+sbt "runMain fitting.Main"
+sbt "runMain validation.Validate"
 ```
-
-Make sure datasets and landmarks are correctly placed in the expected directories.
-
----
-
-## 📌 Key Contributions
-
-* Designed a **multi-stage MCMC fitting pipeline**
-* Improved segmentation accuracy via **proposal tuning**
-* Implemented robust evaluation using geometric metrics
-* Demonstrated generalization on unseen CT images
-
----
-
-## 📈 Future Improvements
-
-* Better proposal distributions for faster convergence
-* Automated landmark detection
-* Deep learning integration (e.g., CNN-based initialization)
-
----
-
-## 👤 Authors
-
-* Matin Roozbahani
-* Hari Narayanan
-
-University of Basel
-
----
-

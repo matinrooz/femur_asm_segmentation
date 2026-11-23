@@ -25,26 +25,20 @@ We first used one chain with the given landmarks, but the results were not plaus
 So we run three chains one after the other, each starting from the best sample of the
 previous one (`src/main/scala/fitting/Main.scala`):
 
-| chain | proposals | posterior | samples |
-|---|---|---|---|
-| 1 | rotation + translation | closest point × prior × landmark likelihood | 7,000 (after 1,000 burn-in) |
-| 2 | shape + rotation + translation | same as chain 1 | 10,000 |
-| 3 | shape + rotation + translation at several step sizes | prior × landmark likelihood × ASM image intensity | 11,000 |
+- Chain 1 only moves rotation and translation. Posterior: closest point × prior × landmark
+  likelihood. 7,000 samples after 1,000 burn-in.
+- Chain 2 also changes the shape, with the same posterior. 10,000 samples.
+- Chain 3 changes shape, rotation and translation at several step sizes, and adds the image
+  term: prior × landmark likelihood × ASM image intensity. 11,000 samples.
 
 The step sizes were tuned per image, they are listed in Tables I to III of the report.
 
 ## Results
 
-Validation set, fitted mesh vs. ground-truth segmentation (`src/main/scala/validation/Validate.scala`,
-distances in mm):
-
-| image | avg. distance | Hausdorff distance |
-|---|---|---|
-| 4 | 1.17 | 11.93 |
-| 14 | 1.30 | 6.35 |
-| 23 | 0.46 | 0.46 |
-| 25 | 1.18 | 4.00 |
-| 30 | 0.81 | 3.82 |
+On the validation set we compared each fitted mesh with the ground-truth segmentation
+(`src/main/scala/validation/Validate.scala`). The average distance was 1.17 mm for image 4,
+1.30 for image 14, 0.46 for image 23, 1.18 for image 25 and 0.81 for image 30. The Hausdorff
+distance, which looks at the worst point, was 11.93, 6.35, 0.46, 4.00 and 3.82 mm.
 
 Average distance is around 1 mm for all images. The Hausdorff distance varies a lot: for
 image 4 some part of the mesh is almost 12 mm away from the segmentation.

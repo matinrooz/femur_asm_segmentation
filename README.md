@@ -1,5 +1,9 @@
 # femur_asm_segmentation
 
+**What:** Group project: femur segmentation in CT by fitting a statistical shape model with an active shape model term and MCMC.  
+**Result:** About 1 mm average distance to the ground truth on the 5 validation images (0.46 to 1.30 mm).  
+**Stack:** Scala, Scalismo
+
 Group project with Hari Narayanan. We segmented femurs in CT images by fitting a statistical
 shape model with an active shape model (ASM) intensity term, using Markov chain Monte Carlo
 (Metropolis-Hastings) in Scala with [Scalismo](https://scalismo.org).
